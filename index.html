@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Game Catur di Web</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/css/chessboard.min.css" />
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+      min-height: 100vh;
+    }
+    h1 { font-size: 2rem; margin-bottom: 1rem; }
+    #board { width: 400px; margin: 20px auto; }
+    .controls {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      margin-top: 10px;
+    }
+    button {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    button:hover { filter: brightness(0.95); }
+    #startBtn { background-color: #3b82f6; color: white; }
+    #undoBtn { background-color: #f59e0b; color: white; }
+    #status {
+      margin-top: 10px;
+      font-weight: bold;
+      min-height: 1.5em;
+      color: #333;
+    }
+    label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Game Catur di Web</h1>
+  <div id="board"></div>
+  <div id="status"></div>
+  <div class="controls">
+    <button id="startBtn">Mulai Baru</button>
+    <button id="undoBtn">Undo</button>
+    <label><input type="checkbox" id="aiToggle"> Lawan Komputer</label>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/js/chessboard.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.1.0/chess.min.js"></script>
+  <script>
+    const game = new Chess();
+    const board = Chessboard('board', {
+      draggable: true,
+      position: 'start',
+      onDragStart: onDragStart,
+      onDrop: onDrop,
+      onSnapEnd: () => board.position(game.fen())
+    });
+    const statusEl = document.getElementById('status');
+    const aiToggle = document.getElementById('aiToggle');
+    function onDragStart(source, piece) {
+      if (game.game_over()) return false;
+      if (aiToggle.checked && piece.search(/^b/) !== -1) return false;
+    }
+    function onDrop(source, target) {
+      const move = game.move({ from: source, to: target, promotion: 'q' });
+      if (move === null) return 'snapback';
+      updateStatus();
+      if (aiToggle.checked && !game.game_over()) {
+        window.setTimeout(makeRandomMove, 250);
+      }
+    }
+    function makeRandomMove() {
+      const moves = game.moves();
+      const move = moves[Math.floor(Math.random() * moves.length)];
+      game.move(move);
+      board.position(game.fen());
+      updateStatus();
+    }
+    function updateStatus() {
+      let status = '';
+      const moveColor = (game.turn() === 'w') ? 'Putih' : 'Hitam';
+      if (game.in_checkmate()) {
+        status = `Skakmat! ${moveColor} kalah.`;
+      } else if (game.in_draw()) {
+        status = 'Hasil seri.';
+      } else {
+        status = `Giliran ${moveColor}`;
+        if (game.in_check()) status += ' — Skak!';
+      }
+      statusEl.textContent = status;
+    }
+    document.getElementById('startBtn').addEventListener('click', () => {
+      game.reset(); board.start(); updateStatus();
+    });
+    document.getElementById('undoBtn').addEventListener('click', () => {
+      game.undo(); board.position(game.fen()); updateStatus();
+    });
+    updateStatus();
+  </script>
+</body>
+</html>
